@@ -1,0 +1,18 @@
+@import './base.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+#app {
+  margin: 0 auto;
+  padding: 2rem;
+  font-weight: normal;
+}
+
+/* Add mobile styles if necessary */
+@media (max-width: 768px) {
+  #app {
+    margin: 0 auto;
+    padding: 0;
+  }
+}
