@@ -74,7 +74,7 @@ export async function loginTeleopti(username, password, authType) {
   });
 
   if (!res.ok) {
-    throw new Error("Failed to login to Teleopti");
+    return false; // Return false if the login fails
   }
 
   console.log(res.headers);

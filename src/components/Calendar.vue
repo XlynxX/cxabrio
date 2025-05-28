@@ -39,7 +39,7 @@
         <!-- Grid of days -->
         <div class="grid grid-cols-7 gap-px bg-[#404147] mt-1">
           <div v-for="(day, i) in calendarDays" :key="i"
-            class="min-h-[120px] md:min-w-[141px] md:max-w-[141px] bg-[#13151B] p-1 relative"
+            class="min-h-[120px] md:min-w-[144px] md:max-w-[144px] bg-[#13151B] p-1 relative"
             :class="{ 'bg-zinc-800 crossed': day.isOtherMonth, 'crossed': day.isDayOff, 'border-2 border-fuchsia-600': isToday(day.date) }">
             <div :class="{
               'text-white font-semibold': isToday(day.date),
@@ -74,7 +74,7 @@
       <div v-if="layout === 'today'">
         <!-- Days of the week -->
         <div class="grid grid-cols-7 text-center text-sm font-medium border-b pb-1">
-          <div v-for="(d, i) in weekDays" :key="i" class="uppercase text-white min-w-[141px] max-w-[141px]">
+          <div v-for="(d, i) in weekDays" :key="i" class="uppercase text-white md:min-w-[144px] md:max-w-[144px]">
             {{ getShortDayName(d) }}
           </div>
         </div>
@@ -117,22 +117,22 @@
         <h2 class="text-lg font-semibold text-white">Зарплатный лист</h2>
         <p>Дневных часов: {{ dayHours }}</p>
         <p>Ночных часов: {{ nightHours }}</p>
-        <p>Овертайм часов: {{ overtimeHours }}</p>
+        <p class="line-through">Овертайм часов: {{ overtimeHours }}</p>
         <p>Всего часов: {{ allHours }}</p>
-        <p>Ставка: {{ payRate }}</p>
+        <p>Ставка: {{ payRate.toPrecision(3) }}</p>
 
         <div class="mt-2">
           <div class="w-3/4 items-center flex">
             <label for="bonus" class="block">Бонус:</label>
             <input id="bonus" type="number" v-model.number="bonus"
-              class="text-white bg-[#13151B] rounded ml-2 px-2 py-1 w-full" placeholder="Бонус" />
+              class="text-white bg-[#13151B] rounded ml-2 px-2 w-full" placeholder="Бонус" />
           </div>
 
-          <label for="nonTaxableMinimum" class="block mt-2">Необлагаемый минимум:</label>
+          <label for="nonTaxableMinimum" class="block">Необлагаемый минимум:</label>
 
           <!-- Поле для необлагаемого минимума -->
           <input id="nonTaxableMinimum" type="number" v-model.number="nonTaxableMinimum"
-            class="text-white bg-[#13151B] rounded px-2 py-1 mt-1 w-3/4" placeholder="Необлагаемый минимум" />
+            class="text-white text-center bg-[#13151B] rounded px-2 py-1 w-3/4 mt-0.5 border" placeholder="Необлагаемый минимум" />
         </div>
 
         <div
@@ -141,6 +141,10 @@
         <p>Брутто: {{ (brutto + bonus).toFixed(2) }} € ({{ brutto.toFixed(2) }} + <span class=" text-yellow-400">{{
           bonus }}</span>)</p>
         <p>Нетто: {{ netto }} €</p>
+
+        <div class="mt-4 text-sm text-white max-w-56">
+          * Калькулятор не считает овертаймы, праздничные часы, больничные, отпуска и VTO.<br><br>
+        </div>
       </div>
       <div class="salary-slip max-md:hidden p-4 max-md:p-2 max-w-6xl bg-[#13151B]">
         <!-- <h2 class="text-lg font-semibold text-white">Праздники</h2> -->
@@ -159,7 +163,6 @@ import { ref, computed, onMounted } from 'vue'
 import { fetchMonthData, fetchWeekData } from '@/services/teleoptiService'
 import { fetchWorkingCalendarHolidays } from '@/services/calendarService'
 import { calculateNettoSalary } from '@/services/salaryTaxCalculator'
-import { all } from 'axios'
 
 const shifts = ref([])  // Track shifts
 const htmlStringContent = ref('');
@@ -325,10 +328,10 @@ const calendarDays = computed(() => {
     const absences = getAbsences(matchedShifts);
     let totalHours = 0;
 
-    // if (isOtherMonth && matchedShifts.length > 0) {
-    //   let _hours = calculateHours(matchedShifts[0].date, matchedShifts[0].time);
-    //   totalHours = _hours.totalHours;
-    // }
+    if (isOtherMonth && matchedShifts.length > 0) {
+      let _hours = calculateHours(matchedShifts[0].date, matchedShifts[0].time);
+      totalHours = _hours.totalHours;
+    }
 
     if (!isOtherMonth && matchedShifts.length > 0) {
       const hours = matchedShifts[0].hours;
@@ -394,7 +397,7 @@ const calendarDays = computed(() => {
   return days;
 });
 
-function calculateHours(date, time, absences) {
+function calculateHours(date, time, absences = []) {
   console.error('DATQE', date);
   if (!time && absences.length < 1) return { totalHours: 0, nightHours: 0, salary: { brutto: 0, netto: 0 } };
   console.error('DATQE', date);
@@ -420,10 +423,11 @@ function calculateHours(date, time, absences) {
           nightHours = 0;
         }
 
+        //TODO
         if (absence.Name === 'LVA Sick Leave Paid') {
-          sl.value.push(['duration', 8.5, 'date:', date, 'absences:', absences]);
+          sl.value.push(['duration', 0, 'date:', date, 'absences:', absences]);
           doCalculations = false;
-          totalHours = 8;
+          totalHours = 0;
           nightHours = 0;
         }
       }
