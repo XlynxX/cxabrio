@@ -1,19 +1,20 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
-import Calendar from './components/Calendar.vue'
-import router from './router'
+import { ref, onMounted } from 'vue';
+import Toast from './components/Toast.vue';
+import { registerToast } from './composables/useToast';
 
+const toastRef = ref(null);
+onMounted(() => registerToast(toastRef.value));
 </script>
 
 <template>
   <header>
   </header>
+
   <body>
-    <!-- <Calendar /> -->
+    <Toast ref="toastRef" />
     <router-view />
   </body>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

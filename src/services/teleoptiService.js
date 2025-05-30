@@ -1,3 +1,5 @@
+import { showToast } from "@/composables/useToast";
+
 const baseUrl = import.meta.env.VITE_SERVER_URL;
 
 export async function fetchMonthData(unixDate) {
@@ -74,11 +76,14 @@ export async function loginTeleopti(username, password, authType) {
   });
 
   if (!res.ok) {
+    res.json().then(data => {
+      showToast(data.error);
+    });
     return false; // Return false if the login fails
   }
 
   console.log(res.headers);
-  
+
   localStorage.setItem('teleoptiCookie', res.headers.get('calabrio'));
 
   let data = await res.json();

@@ -434,8 +434,8 @@ function calculateHours(date, time, absences = []) {
     });
   }
 
+  let isNightShift = false;
   if (doCalculations && time) {
-  
     // Split the time range into start and end times
     let [startTime, endTime] = time.split('+')[0].split(' – ');
 
@@ -473,6 +473,7 @@ function calculateHours(date, time, absences = []) {
 
     // Handle edge case where shift starts at midnight (00:00)
     if (startDateTime.hour() === 0 && startDateTime.minute() === 0) {
+      isNightShift = true;
       // If the shift starts at 00:00, consider it part of the night shift (from 22:00 of the previous day to 06:00)
 
       // Adjust night start to 22:00 of the previous day (nightStartAtNextDay)
@@ -490,6 +491,11 @@ function calculateHours(date, time, absences = []) {
   }
 
   nightHours = nightHours > 2 ? nightHours : 0; // Set night hours to 0 if less than 2 hours
+  
+  // If night hours are exactly 6 and the shift starts at midnight, adjust night hours to 5.5
+  if (nightHours === 6 && isNightShift) {
+    nightHours = 5.5; // Adjust night hours to 5.5 if exactly 6 hours
+  }
 
   salary.brutto = (totalHours * payRate.value) + (nightHours * (yearPayRate.value * 0.5));
 
