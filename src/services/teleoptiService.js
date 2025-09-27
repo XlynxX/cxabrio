@@ -2,6 +2,39 @@ import { showToast } from "@/composables/useToast";
 
 const baseUrl = import.meta.env.VITE_SERVER_URL;
 
+export async function fetchTeamsAndGroups(unixDate) {
+  // console.log(unixDate);
+  // Format the date as "YYYY/MM/DD"
+  const date = new Date(unixDate);
+  const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+  // console.log(unixDate);
+  // console.log(formattedDate);
+  
+  
+  
+  const url = `https://teleopti.nordic.webhelp.com/TeleoptiWFM/Web/MyTime/Team/TeamsAndGroupsWithAllTeam?date=${formattedDate}&_=${unixDate}`
+  // console.log(url);
+
+  const response = await fetch(`${baseUrl}/proxy`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      targetUrl: url, // Use the dynamically formatted date URL
+      cookie: localStorage.getItem('teleoptiCookie'), // Retrieve the cookie from local storage
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch Teleopti data");
+  }
+
+  // console.log(await response.json());
+  return await response.json();
+}
+
 export async function fetchMonthData(unixDate) {
   // Convert the Unix timestamp to a Date object
   const date = new Date(unixDate);

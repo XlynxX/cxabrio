@@ -52,6 +52,7 @@
             <div class="mt-2 space-y-1">
               <div v-for="(shift, idx) in day.shifts" :key="idx" class="shift-container px-2 max-md:px-0">
                 <div
+                  @mouseover="dayMouseOver = true; loadDayMouseOver()" @mouseleave="dayMouseOver = false"
                   v-if="(shift.hours > 0 || shift.isDayOff == false) && (day.isFullDayAbsence == false && day.totalHours > 0)"
                   :class="shift.color + ' p-2 rounded text-white text-xs font-medium leading-tight'">
                   <div class="text-[15px] font-semibold max-md:hidden">{{ shift.label }}</div>
@@ -155,14 +156,19 @@
   <div class="bg-[#13151B] text-white text-center font-extralight p-4 mt-4">
     <p>Made with <b class="text-red-500">❤</b> by XlynxX</p>
   </div>
+  <!-- <div v-show="dayMouseOver" class="tooltip">Hover over me
+    <span class="tooltiptext">Some tooltip text</span>
+  </div>  -->
+  <CursorTooltip v-show="dayMouseOver" />
 </template>
 
 <script setup>
 import moment from 'moment'
 import { ref, computed, onMounted } from 'vue'
-import { fetchMonthData, fetchWeekData } from '@/services/teleoptiService'
+import { fetchMonthData, fetchWeekData, fetchTeamsAndGroups } from '@/services/teleoptiService'
 import { fetchWorkingCalendarHolidays } from '@/services/calendarService'
 import { calculateNettoSalary } from '@/services/salaryTaxCalculator'
+import CursorTooltip from '@/components/CursorTooltip.vue'
 
 const shifts = ref([])  // Track shifts
 const htmlStringContent = ref('');
@@ -170,6 +176,7 @@ const layout = ref('month');
 const salary = ref(814);
 const payRate = ref(0);
 const yearPayRate = ref(0);
+const dayMouseOver = ref(false);
 
 const hours = ref(Array.from({ length: 24 }, (_, i) => i)); // Hours 0-23
 const daysOfWeek = ref(['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']);
@@ -207,6 +214,12 @@ function eventStyle(event, hour) {
     height: `${height}px`, // Event height based on its duration
     width: '100%',
   };
+}
+
+async function loadDayMouseOver() {
+  const data = await fetchTeamsAndGroups(current.value.getTime())
+  console.log(data.teams[0].children);
+  
 }
 
 function getEventsForHour(hour, dayIndex) {
@@ -307,7 +320,7 @@ onMounted(async () => {
 const weekDays = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье']
 
 const monthYear = computed(() =>
-  current.value.toLocaleString('default', { month: 'long', year: 'numeric' })
+  current.value.toLocaleString('ru', { month: 'long', year: 'numeric' })
 )
 
 const startOfMonth = computed(() => new Date(current.value.getFullYear(), current.value.getMonth(), 1))
@@ -719,6 +732,32 @@ function isToday(date) {
   font-size: 12px;
   line-height: 18px;
   cursor: pointer;
+}
+
+/* Tooltip container */
+.tooltip {
+  position: absolute;
+  display: inline-block;
+  border-bottom: 1px dotted black; /* Add dots under the hoverable text */
+  cursor: pointer;
+}
+
+/* Tooltip text */
+.tooltiptext {
+  visibility: hidden; /* Hidden by default */
+  width: 130px;
+  background-color: black;
+  color: #ffffff;
+  text-align: center;
+  padding: 5px 0;
+  border-radius: 6px;
+  position: absolute;
+  z-index: 1; /* Ensure tooltip is displayed above content */
+}
+
+/* Show the tooltip text on hover */
+.tooltip:hover .tooltiptext {
+  visibility: visible;
 }
 
 /* Add mobile styles if necessary */
