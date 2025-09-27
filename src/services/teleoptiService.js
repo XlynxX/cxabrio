@@ -10,9 +10,9 @@ export async function fetchTeamsAndGroups(unixDate) {
 
   // console.log(unixDate);
   // console.log(formattedDate);
-  
-  
-  
+
+
+
   const url = `https://teleopti.nordic.webhelp.com/TeleoptiWFM/Web/MyTime/Team/TeamsAndGroupsWithAllTeam?date=${formattedDate}&_=${unixDate}`
   // console.log(url);
 
@@ -32,6 +32,39 @@ export async function fetchTeamsAndGroups(unixDate) {
   }
 
   // console.log(await response.json());
+  return await response.json();
+}
+
+export async function fetchTeamSchedule(unixDate, teams) {
+  const date = new Date(unixDate);
+  const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+  const url = `https://teleopti.nordic.webhelp.com/TeleoptiWFM/Web/MyTime/Team/TeamsAndGroupsWithAllTeam?date=${formattedDate}&_=${unixDate}`
+
+  const query = { 
+    "SelectedDate": formattedDate, 
+    "ScheduleFilter": { "teamIds": teams.join(","), "searchNameText": "", "isDayOff": false, "onlyNightShift": false, "filteredStartTimes": "", "filteredEndTimes": "" }, 
+    "Paging": { "Take": 50, "Skip": 0 } 
+  };
+
+  const response = await fetch(`${baseUrl}/proxy`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      method: 'POST',
+      targetUrl: url, // Use the dynamically formatted date URL
+      cookie: localStorage.getItem('teleoptiCookie'), // Retrieve the cookie from local storage
+      ...query
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch Teleopti data");
+  }
+
+  console.log(await response.json());
   return await response.json();
 }
 

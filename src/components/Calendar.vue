@@ -165,7 +165,7 @@
 <script setup>
 import moment from 'moment'
 import { ref, computed, onMounted } from 'vue'
-import { fetchMonthData, fetchWeekData, fetchTeamsAndGroups } from '@/services/teleoptiService'
+import { fetchMonthData, fetchWeekData, fetchTeamsAndGroups, fetchTeamSchedule } from '@/services/teleoptiService'
 import { fetchWorkingCalendarHolidays } from '@/services/calendarService'
 import { calculateNettoSalary } from '@/services/salaryTaxCalculator'
 import CursorTooltip from '@/components/CursorTooltip.vue'
@@ -218,8 +218,12 @@ function eventStyle(event, hour) {
 
 async function loadDayMouseOver() {
   const data = await fetchTeamsAndGroups(current.value.getTime())
-  console.log(data.teams[0].children);
+  const teams = data.teams[0].children.map(i => i.id);
+
+  console.log(teams);
   
+  
+  const teamSchedule = await fetchTeamSchedule(current.value.getTime(), teams);
 }
 
 function getEventsForHour(hour, dayIndex) {
