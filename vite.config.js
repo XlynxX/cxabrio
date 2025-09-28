@@ -16,6 +16,6 @@ export default defineConfig({
     },
   },
   build: {
-    base: process.env.NODE_ENV === 'production' ? '/cxabrio/' : '/cxabrio',
+    base: process.env.NODE_ENV === 'production' ? '/cxabrio/' : './',
   },
 })
