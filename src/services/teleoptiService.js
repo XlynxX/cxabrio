@@ -39,7 +39,7 @@ export async function fetchTeamSchedule(unixDate, teams) {
   const date = new Date(unixDate);
   const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-  const url = `https://teleopti.nordic.webhelp.com/TeleoptiWFM/Web/MyTime/Team/TeamsAndGroupsWithAllTeam?date=${formattedDate}&_=${unixDate}`
+  const url = `https://teleopti.nordic.webhelp.com/TeleoptiWFM/Web/api/TeamSchedule/TeamSchedule`
 
   const query = { 
     "SelectedDate": formattedDate, 
@@ -55,7 +55,7 @@ export async function fetchTeamSchedule(unixDate, teams) {
     body: JSON.stringify({
       method: 'POST',
       targetUrl: url, // Use the dynamically formatted date URL
-      cookie: localStorage.getItem('teleoptiCookie'), // Retrieve the cookie from local storage
+      cookie: localStorage.getItem('teleoptiCookie'),
       ...query
     }),
   });
@@ -64,8 +64,71 @@ export async function fetchTeamSchedule(unixDate, teams) {
     throw new Error("Failed to fetch Teleopti data");
   }
 
-  console.log(await response.json());
-  return await response.json();
+  const data = await response.json();
+  // console.log(data.AgentSchedules.map(e => e.Name));
+  // return await response.json();
+  const workingColleagues = data.AgentSchedules.filter(e => e.IsDayOff === false);
+  let { teamLeaders, admins, colleagues } = getTeamLeaders(workingColleagues);
+  console.log('tls', teamLeaders);
+  console.log('admins', admins);
+  console.log('colleagues', colleagues);
+  // console.log(filtered);
+  
+  // return [];
+  // return data.AgentSchedules.map(e => e.Name);
+  
+  return { teamLeaders, admins, colleagues };
+}
+
+function getTeamLeaders(list) {
+  let teamLeaders = [];
+  let admins = [];
+  let colleagues = [];
+
+  list.forEach(e => {
+    var isTeamLeader = false;
+    var isAdmin = false;
+
+    for (let i = 0; i < e.Periods.length; i++) {
+      const period = e.Periods[i];
+
+      if (period.Title === 'Duty') {
+        isTeamLeader = true;
+        break;
+      }
+
+      if (period.Title === 'Admin') {
+        isAdmin = true;
+        break;
+      }
+    }
+
+    if (isTeamLeader) {
+      const name = e.Name;
+      
+      const startTime = e.Periods[0].TimeSpan.split(' – ')[0];
+      const endTime = e.Periods[e.Periods.length - 1].TimeSpan.split(' – ')[1];
+      var periodTime = startTime + ' – ' + endTime;
+
+      teamLeaders.push({name: name, period: periodTime});
+    }
+
+    if (isAdmin) {
+      const name = e.Name;
+      
+      const startTime = e.Periods[0].TimeSpan.split(' – ')[0];
+      const endTime = e.Periods[e.Periods.length - 1].TimeSpan.split(' – ')[1];
+      var periodTime = startTime + ' – ' + endTime;
+
+      admins.push({name: name, period: periodTime});
+    }
+
+    if (!isTeamLeader && !isAdmin) {
+      colleagues.push({name: e.Name})
+    }
+  });
+
+  return { teamLeaders, admins, colleagues };
 }
 
 export async function fetchMonthData(unixDate) {

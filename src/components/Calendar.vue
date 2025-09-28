@@ -159,7 +159,7 @@
   <!-- <div v-show="dayMouseOver" class="tooltip">Hover over me
     <span class="tooltiptext">Some tooltip text</span>
   </div>  -->
-  <CursorTooltip v-show="dayMouseOver" />
+  <CursorTooltip :tlod-list="tlodListRef" :admin-list="adminListRef" :colleague-list="colleagueListRef" v-show="dayMouseOver" />
 </template>
 
 <script setup>
@@ -194,6 +194,10 @@ const netto = ref(0);
 const current = ref(new Date())
 const sl = ref([]);
 
+const tlodListRef = ref([]);
+const adminListRef = ref([]);
+const colleagueListRef = ref([]);
+
 const schedule = ref([
   { name: 'Training', type: 'training', hour: 0, duration: 1 }, // 1 hour
   { name: 'Training', type: 'training', hour: 1.25, duration: 1.45 }, // 1 hour
@@ -223,7 +227,15 @@ async function loadDayMouseOver() {
   console.log(teams);
   
   
-  const teamSchedule = await fetchTeamSchedule(current.value.getTime(), teams);
+  let { teamLeaders, admins, colleagues } = await fetchTeamSchedule(current.value.getTime(), teams);
+  // console.log('tlodList', tlodList);
+  
+
+  tlodListRef.value = teamLeaders;
+  adminListRef.value = admins;
+  colleagueListRef.value = colleagues;
+  // tooltipList.value = teamSchedule;
+  // tooltipText.value = `Коллеги на смене: \n${teamSchedule.join('\n')}`;
 }
 
 function getEventsForHour(hour, dayIndex) {

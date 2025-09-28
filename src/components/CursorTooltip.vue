@@ -4,17 +4,29 @@
     class="tooltip"
     :style="{ top: y + 'px', left: x + 'px' }"
   >
-    {{ text }}
+  {{ 'ТЛоды на смене:' }}
+  <div v-for="(item, index) in tlodList" :key="index">
+    <div><span>{{ item.name }}</span> - <span>{{ item.period }}</span></div>
+  </div>
+  <div class=" mt-2">Коллеги на смене:</div>
+  <div v-for="(item, index) in colleagueList" :key="index">
+    {{ item.name }}
+  </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 
+defineProps({
+  tlodList: Array,
+  adminList: Array,
+  colleagueList: Array
+})
+
 const x = ref(0)
 const y = ref(0)
 const visible = ref(false)
-const text = ref('Тлоды на смене:')
 
 function updateMousePosition(e) {
   x.value = e.pageX + 10 // offset so it doesn’t cover cursor
