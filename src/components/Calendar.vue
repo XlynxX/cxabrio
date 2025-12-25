@@ -588,9 +588,8 @@ async function refreshSalary() {
 }
 
 async function refreshData() {
+  const calendar = await fetchWorkingCalendarHolidays(current.value.getFullYear());
   const monthHours = [];
-  if (workingHours.value === 0 || yearWorkingHours.value === 0) {
-    const calendar = await fetchWorkingCalendarHolidays(current.value.getFullYear());
 
     for (let i = 0; i < calendar.length; i++) {
       let html = calendar[i].innerHTML;
@@ -616,7 +615,6 @@ async function refreshData() {
     htmlStringContent.value = calendar[current.value.getMonth()].innerHTML;
     workingHours.value = monthHours[current.value.getMonth()];
     yearWorkingHours.value = monthHours.reduce((a, b) => a + b, 0);
-  }
 
   console.log("Working Hours: ", workingHours.value);
   console.log("Working Year Hours: ", yearWorkingHours.value, monthHours);
