@@ -12,6 +12,10 @@
 
     </div>
     <div class="p-4 max-md:p-2 max-w-6xl bg-[#13151B]">
+      <!-- <div class="flex mx-auto pb-4">
+        <div class=" border-slate-800 border-2 p-1 px-2 rounded-lg">{{ userName }}</div>
+      </div> -->
+
       <!-- Header -->
       <div class="flex items-center justify-between mb-4">
         <div class="flex gap-2">
@@ -39,7 +43,7 @@
         <!-- Grid of days -->
         <div class="grid grid-cols-7 gap-px bg-[#404147] mt-1">
           <div v-for="(day, i) in calendarDays" :key="i"
-            class="min-h-[120px] md:min-w-[144px] md:max-w-[144px] bg-[#13151B] p-1 relative"
+            class="min-h-[120px] md:min-w-[146px] md:max-w-[146px] bg-[#13151B] p-1 relative"
             :class="{ 'bg-zinc-800 crossed': day.isOtherMonth, 'crossed': day.isDayOff, 'border-2 border-fuchsia-600': isToday(day.date) }">
             <div :class="{
               'text-white font-semibold': isToday(day.date),
@@ -116,7 +120,15 @@
     <div>
       <div class="salary-slip max-md:hidden p-4 max-md:p-2 max-w-6xl bg-[#13151B]">
         <h2 class="text-lg font-semibold text-white">Зарплатный лист</h2>
-        <p>Дневных часов: {{ dayHours }}</p>
+        <div class="">
+          <div class="w-3/4 items-center flex">
+            <label for="salary" class="block">Зарплата:</label>
+            <input id="salary" type="number" v-model.number="salary"
+              class="text-white bg-[#13151B] rounded ml-2 px-2 w-full" placeholder="Зарплата" />
+          </div>
+        </div>
+        
+          <p>Дневных часов: {{ dayHours }}</p>
         <p>Ночных часов: {{ nightHours }}</p>
         <p class="line-through">Овертайм часов: {{ overtimeHours }}</p>
         <p>Всего часов: {{ allHours }}</p>
@@ -139,8 +151,8 @@
         <div
           class="py-2 w-2/3 flex items-center text-sm text-white before:flex-1 before:border-t before:border-gray-200 before:me-6 after:flex-1 after:border-t after:border-gray-200 after:ms-6 dark:text-white dark:before:border-neutral-600 dark:after:border-neutral-600">
           Итого</div>
-        <p>Брутто: {{ (brutto + bonus).toFixed(2) }} € ({{ brutto.toFixed(2) }} + <span class=" text-yellow-400">{{
-          bonus }}</span>)</p>
+        <p>Брутто: {{ (brutto + (Number(bonus) || 0)).toFixed(2) }} € ({{ brutto.toFixed(2) }} + <span class=" text-yellow-400">{{
+          (Number(bonus) || 0) }}</span>)</p>
         <p>Нетто: {{ netto }} €</p>
 
         <div class="mt-4 text-sm text-white max-w-56">
@@ -164,7 +176,7 @@
 
 <script setup>
 import moment from 'moment'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { fetchMonthData, fetchWeekData, fetchTeamsAndGroups, fetchTeamSchedule } from '@/services/teleoptiService'
 import { fetchWorkingCalendarHolidays } from '@/services/calendarService'
 import { calculateNettoSalary } from '@/services/salaryTaxCalculator'
@@ -177,6 +189,7 @@ const salary = ref(814);
 const payRate = ref(0);
 const yearPayRate = ref(0);
 const dayMouseOver = ref(false);
+const userName = ref(localStorage.getItem('name'));
 
 const hours = ref(Array.from({ length: 24 }, (_, i) => i)); // Hours 0-23
 const daysOfWeek = ref(['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']);
@@ -197,6 +210,18 @@ const sl = ref([]);
 const tlodListRef = ref([]);
 const adminListRef = ref([]);
 const colleagueListRef = ref([]);
+
+const workingHours = ref(0);
+const yearWorkingHours = ref(0);
+
+watch(salary, (newValue, oldValue) => {
+  if (newValue) {
+    console.log('Salary changed:', oldValue, '→', newValue)
+    salary.value = newValue;
+
+    refreshSalary();
+  }
+})
 
 const schedule = ref([
   { name: 'Training', type: 'training', hour: 0, duration: 1 }, // 1 hour
@@ -267,8 +292,6 @@ const lineStyle = computed(() => {
     borderTop: '2px dashed red', // Red dashed line for current time
   };
 });
-
-
 
 async function today() {
   const data = await fetchWeekData(current.value.getTime())
@@ -552,41 +575,55 @@ const getShortDayName = (day) => {
   return day; // Return full day names for larger screens
 }
 
-async function refreshData() {
-  const calendar = await fetchWorkingCalendarHolidays(current.value.getFullYear());
-
-  const monthHours = [];
-
-  for (let i = 0; i < calendar.length; i++) {
-    let html = calendar[i].innerHTML;
-
-    // Remove the entire <ul class="monthDetails"> and its contents
-    html = html.replace(/<ul class="monthDetails">.*?<\/ul>/s, '');
-
-    // Remove the <span class="star"> and its content (the '*' symbol)
-    html = html.replace(/<span class="star">\*<\/span>/g, '');
-
-    // Use a regex to match the total working hours in the <p> tag after removing <ul class="monthDetails">
-    let totalWorkingHoursPattern = /<p>.*?(\d+)\s*darba stunda.*?<\/p>/;
-
-    // Match against the <p> element that contains total working hours (e.g., "151 darba stunda")
-    let totalWorkingHours = html.match(totalWorkingHoursPattern);
-
-    // Extract the working hours number from the match
-    let numberOfWorkingHours = totalWorkingHours ? parseInt(totalWorkingHours[1], 10) : null;
-
-    monthHours[i] = numberOfWorkingHours;
-  }
-
-  htmlStringContent.value = calendar[current.value.getMonth()].innerHTML;
-  const workingHours = monthHours[current.value.getMonth()];
-  const yearWorkingHours = monthHours.reduce((a, b) => a + b, 0);
-  console.log("Working Hours: ", workingHours);
-  console.log("Working Year Hours: ", yearWorkingHours, monthHours);
+async function refreshSalary() {
+  console.log("Working Hours: ", workingHours.value);
+  console.log("Working Year Hours: ", yearWorkingHours.value);
 
   // payRate.value = salary.value / numberOfWorkingHours;
-  payRate.value = parseFloat((salary.value / workingHours));
-  yearPayRate.value = parseFloat(salary.value / (yearWorkingHours / 12));
+  payRate.value = parseFloat((salary.value / workingHours.value));
+  yearPayRate.value = parseFloat(salary.value / (yearWorkingHours.value / 12));
+
+  const data = await fetchMonthData(current.value.getTime())
+  updateShifts(data)
+}
+
+async function refreshData() {
+  const monthHours = [];
+  if (workingHours.value === 0 || yearWorkingHours.value === 0) {
+    const calendar = await fetchWorkingCalendarHolidays(current.value.getFullYear());
+
+    for (let i = 0; i < calendar.length; i++) {
+      let html = calendar[i].innerHTML;
+
+      // Remove the entire <ul class="monthDetails"> and its contents
+      html = html.replace(/<ul class="monthDetails">.*?<\/ul>/s, '');
+
+      // Remove the <span class="star"> and its content (the '*' symbol)
+      html = html.replace(/<span class="star">\*<\/span>/g, '');
+
+      // Use a regex to match the total working hours in the <p> tag after removing <ul class="monthDetails">
+      let totalWorkingHoursPattern = /<p>.*?(\d+)\s*darba stunda.*?<\/p>/;
+
+      // Match against the <p> element that contains total working hours (e.g., "151 darba stunda")
+      let totalWorkingHours = html.match(totalWorkingHoursPattern);
+
+      // Extract the working hours number from the match
+      let numberOfWorkingHours = totalWorkingHours ? parseInt(totalWorkingHours[1], 10) : null;
+
+      monthHours[i] = numberOfWorkingHours;
+    }
+
+    htmlStringContent.value = calendar[current.value.getMonth()].innerHTML;
+    workingHours.value = monthHours[current.value.getMonth()];
+    yearWorkingHours.value = monthHours.reduce((a, b) => a + b, 0);
+  }
+
+  console.log("Working Hours: ", workingHours.value);
+  console.log("Working Year Hours: ", yearWorkingHours.value, monthHours);
+
+  // payRate.value = salary.value / numberOfWorkingHours;
+  payRate.value = parseFloat((salary.value / workingHours.value));
+  yearPayRate.value = parseFloat(salary.value / (yearWorkingHours.value / 12));
 
   const data = await fetchMonthData(current.value.getTime())
   updateShifts(data)

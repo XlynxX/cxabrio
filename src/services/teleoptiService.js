@@ -216,6 +216,7 @@ export async function loginTeleopti(username, password, authType) {
   localStorage.setItem('teleoptiCookie', res.headers.get('calabrio'));
 
   let data = await res.json();
+  localStorage.setItem('name', data.username);
   return { username: data.username };
 
   // const url = 'https://teleopti.nordic.webhelp.com/TeleoptiWFM/Web/SSO/ApplicationAuthenticationApi/Password';
